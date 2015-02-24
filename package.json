@@ -1,0 +1,16 @@
+{
+  "name": "carto",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.coffee",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Braden McDorman",
+  "license": "MIT",
+  "dependencies": {
+    "csv-parse": "0.0.9",
+    "kdtree": "0.0.10",
+    "ws": "^0.7.1"
+  }
+}
