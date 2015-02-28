@@ -25,6 +25,15 @@ company_query = (ws, json) ->
   ws.send JSON.stringify actualret
 
 service_query = (ws, json) ->
+  center = json["center"]
+  radius = json["radius"]
+  ret = company_tree.nearestRange center[0], center[1], radius
+  actualret = 
+    type: json["type"]
+    value: ret
+  ws.send JSON.stringify actualret
+  
+closest_service_query = (ws, json) ->
   center = json["location"]
   ret = service_tree.nearest center[0], center[1]
   actualret = 
@@ -33,8 +42,6 @@ service_query = (ws, json) ->
   ws.send JSON.stringify actualret
 
 fault_query = (ws, json) ->
-  center = json["location"]
-  ret = service_tree.nearest center[0], center[1]
   actualret = 
     type: json["type"]
     value: business_faults
@@ -48,7 +55,8 @@ resolve_fault = (ws, json) ->
 api_handlers =
   "company_query": company_query
   "service_query": service_query
-  "fault_query"  : fault_query
+  "closest_service_query": closest_service_query
+  "fault_query": fault_query
   "resolve_fault": resolve_fault
 
 handle_socket = (ws) ->
