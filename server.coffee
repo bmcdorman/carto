@@ -27,7 +27,7 @@ company_query = (ws, json) ->
 service_query = (ws, json) ->
   center = json["center"]
   radius = json["radius"]
-  ret = company_tree.nearestRange center[0], center[1], radius
+  ret = service_tree.nearestRange center[0], center[1], radius
   actualret = 
     type: json["type"]
     value: ret
