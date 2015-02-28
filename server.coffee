@@ -9,46 +9,38 @@ service_tree = new kd.KDTree(2)
 listen_port = 8374
 num_businesses = 0
 
+businesses = []
 business_faults = []
 
 # populate service tree
 for i in [1 .. 1000]
   service_tree.insert(Math.random() * 360.0 - 180.0, Math.random() * 360.0 - 180.0, i)
 
-company_query = (ws, json) ->
-  center = json["center"]
-  radius = json["radius"]
-  ret = company_tree.nearestRange center[0], center[1], radius
-  actualret = 
-    type: json["type"]
-    value: ret
-  ws.send JSON.stringify actualret
+company_query = (ws, json) -> businesses
 
 service_query = (ws, json) ->
-  center = json["center"]
-  radius = json["radius"]
-  ret = service_tree.nearestRange center[0], center[1], radius
-  actualret = 
-    type: json["type"]
-    value: ret
-  ws.send JSON.stringify actualret
-  
+  services = service_tree.nearestRange 0.0, 0.0, 100000.0
+  fixed = []
+  for service in services
+    fixed.push
+      "position":
+        "lat": service[0]
+        "lng": service[1]
+      "id": service[2]
+  fixed
+
+business_query = (ws, json) ->
+  id = json["id"]
+  businesses[id]
+
 closest_service_query = (ws, json) ->
   center = json["location"]
-  ret = service_tree.nearest center[0], center[1]
-  actualret = 
-    type: json["type"]
-    value: ret
-  ws.send JSON.stringify actualret
+  service_tree.nearest center[0], center[1]
 
-fault_query = (ws, json) ->
-  actualret = 
-    type: json["type"]
-    value: business_faults
-  ws.send JSON.stringify actualret
+fault_query = (ws, json) -> business_faults
 
 resolve_fault = (ws, json) ->
-  i = json["business_id"]
+  i = json["id"]
   business_faults = business_faults.filter (e) -> e isnt i
   
 
@@ -68,11 +60,15 @@ handle_socket = (ws) ->
       return
     handler = api_handlers[json["type"]]
     return unless handler?
-    handler ws, json
+    ret = handler ws, json["data"]
+    actualret = 
+      "type": json["type"]
+      "value": ret
+    ws.send JSON.stringify actualret
 
 fault_gen = (wss) ->
   fault_gen_lam = ->
-    setTimeout(fault_gen_lam, 5000)
+    setTimeout(fault_gen_lam, 10000)
     return unless Math.random() > 0.7
     i = (Math.random() * num_businesses) | 0
     
@@ -100,10 +96,19 @@ error = (m) ->
 # Read in company data
 parser = csv delimiter: ','
 
+business_id_it = 0
 parser.on 'readable', ->
   while record = parser.read()
     error "Malformed record of length #{record.length}" unless record.length is 3
-    company_tree.insert parseFloat(record[1]), parseFloat(record[2]), record[0]
+    company_tree.insert parseFloat(record[1]), parseFloat(record[2]),
+      "name": record[0]
+      "id": num_businesses
+    businesses.push
+      "position":
+        "lat": parseFloat(record[1])
+        "lng": parseFloat(record[2])
+      "name": record[0]
+      "id": num_businesses
     num_businesses += 1
 
 parser.on 'error', (err) -> error err.message
